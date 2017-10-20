@@ -1,9 +1,9 @@
-git_doccommit
+doccommit
 =============
 
 .. testsetup::
 
-    from git_doccommit import *
+    from doccommit import *
 
-.. automodule:: git_doccommit
+.. automodule:: doccommit
     :members:

@@ -1,7 +1,7 @@
 [paths]
 source =
-   src/git_doccommit
-   */site-packages/git_doccommit
+   src/doccommit
+   */site-packages/doccommit
 
 [run]
 branch = true
