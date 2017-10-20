@@ -22,6 +22,22 @@ def read(*names, **kwargs):
     ).read()
 
 
+def requires(filename):
+    """Returns a list of all pip requirements
+    :param filename: the Pip requirement file (usually 'requirements.txt')
+    :return: list of modules
+    :rtype: list
+    """
+    modules = []
+    with open(filename, 'r') as pipreq:
+        for line in pipreq:
+            line = line.strip()
+            if not line or line[0] in ('-', '#'):
+                continue
+            modules.append(line)
+    return modules
+
+
 setup(
     name='git-doccommit',
     version='0.1.1',
@@ -39,6 +55,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
+    
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 5 - Production/Stable',
@@ -57,14 +74,7 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    install_requires=[
-        # eg: 'aspectlib==1.1.1', 'six>=1.7',
-    ],
-    extras_require={
-        # eg:
-        #   'rst': ['docutils>=0.11'],
-        #   ':python_version=="2.6"': ['argparse'],
-    },
+    install_requires=requires('requirements.txt'),
     entry_points={
         'console_scripts': [
             'git-doccommit = doccommit.cli:main',

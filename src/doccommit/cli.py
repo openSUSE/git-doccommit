@@ -15,12 +15,25 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import argparse
+from doccommit import git
 
 parser = argparse.ArgumentParser(description='Command description.')
-parser.add_argument('names', metavar='NAME', nargs=argparse.ZERO_OR_MORE,
-                    help="A name of something.")
+parser = argparse.ArgumentParser(description="""This git subcommand helps to create well
+formatted git commits. They can be used to automatically create doc update sections for for SUSE
+documentation.""")
+
+subparsers = parser.add_subparsers(help='sub-command help')
+
+parser_a = subparsers.add_parser('commit', help='commit help')
+parser_a.add_argument('-i', '--interactive', action='store_true', help='Start in interactive mode')
+parser_a.add_argument('-m', type=str, help='Commit message')
+parser_a.add_argument('-s', type=str, help='Commit subject')
+parser_a.add_argument('-l', type=str, help='List of affected XML IDs')
+
+parser_b = subparsers.add_parser('docupdate', help='docupdate help')
+parser_b.add_argument('--file', type=str, help='Path to the XML file containing the doc update section')
 
 
 def main(args=None):
     args = parser.parse_args(args=args)
-    print(args.names)
+    print(args)
