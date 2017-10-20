@@ -1,0 +1,16 @@
+[paths]
+source =
+   src/doccommit
+   */site-packages/doccommit
+
+[run]
+branch = true
+source =
+    doccommit
+    tests
+parallel = true
+
+[report]
+show_missing = true
+precision = 2
+omit = *migrations*
