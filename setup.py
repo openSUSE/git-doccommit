@@ -67,7 +67,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'git-doccommit = git_doccommit.cli:main',
+            'git-doccommit = doccommit.cli:main',
         ]
     },
 )
