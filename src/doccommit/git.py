@@ -4,12 +4,45 @@ This is taylored towards SUSE-style repositories, usually made for daps.
 They contain DC files, as well as a "xml" folder with single DocBook-XML files.
 """
 
-def validate_input(subject, message, xml_ids, merge_commits):
+class CommitMessage():
+    def __init__(self):
+        self.reference          = ""
+        self.reference_types    = []
+        self.reference_ids      = []
+        self.subject            = ""
+        self.xml_ids            = []
+        self.merge_commits      = ""
+        self.message            = ""
+
+
+    def validate_reference(self, no_add = True):
+        """
+        Validate reference. Must contain a keyword like bsc, fate and a number.
+        """
+        valid_references = ['bsc', 'boo', 'fate']
+        for single_reference in self.reference.split(','):
+            [type, id] = single_reference.split('#')
+            if type.lower() not in valid_references:
+                return "Unknown reference type."
+            try:
+                id = int(id)
+            except ValueError:
+                return "ID is not a number."
+            if no_add == False:
+                self.reference_types.append(type)
+                self.reference_ids.append(id)
+
+        return True
+
+
+
+def validate_input(subject, message, xml_ids, merge_commits, reference):
     """
-    # 1) subject (first line) not more than 50 characters
-    # 2) detailed block 72 characters per line
-    # 3) subject must contain one of the following keywords at the beginning:
-    #    Add, Remove, Change, Typo, Structure
+    Validates if the user input is good enough for a commit.
+    1) subject (first line) not more than 50 characters
+    2) detailed block 72 characters per line
+    3) subject must contain one of the following keywords at the beginning:
+       Add, Remove, Change, Typo, Structure
     """
     if len(subject) > 50:
         return "Subject longer than 50 characters."
@@ -21,6 +54,9 @@ def validate_input(subject, message, xml_ids, merge_commits):
     for line in message.splitlines():
         if len(line) > 72:
             return "Message line longer than 72 characters."
+
+    if not validate_reference(reference):
+        return "No valid reference to Bugtracker."
 
     return True
 
@@ -64,14 +100,14 @@ def format_message(subject, message, xml_ids, merge_commits):
     result = subject + "\n\n" + message + "\n\n" + "XML IDs: "
     more = False
     for xml_id in xml_ids:
-        result = result + ( ", " if more == True else "" ) + "§" + xml_id
+        result = result + (", " if more == True else "") + "" + xml_id
         more = True
 
     result = result + "\n\n" + "DocUpdate Merge: "
 
     more = False
     for merge_commit in merge_commits:
-        result = result + ( ", " if more == True else "" ) + merge_commit
+        result = result + (", " if more == True else "") + merge_commit
         more = True
 
     result = result + "~~ created by git-doccommit version 0.1.1"
