@@ -29,6 +29,7 @@ parser_a.add_argument('-i', '--interactive', action='store_true', help='Start in
 parser_a.add_argument('-m', type=str, help='Commit message')
 parser_a.add_argument('-s', type=str, help='Commit subject')
 parser_a.add_argument('-l', type=str, help='List of affected XML IDs')
+parser_a.add_argument('-r', type=str, help='Reference Bug or FATE entry')
 
 parser_b = subparsers.add_parser('docupdate', help='docupdate help')
 parser_b.add_argument('--file', type=str, help='Path to the XML file containing the doc update section')
