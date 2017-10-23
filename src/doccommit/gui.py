@@ -1,14 +1,14 @@
 #import dialog
 
-class GraphicCommit():
-    def __init__():
-        pass
+class CommitGUI():
+    def __init__(self, commitMessage):
+        self.commitMessage = commitMessage
 
     
-    def step_stage():
+    def step_stage(self):
         pass
 
 
-    def step_message():
+    def step_message(self):
         pass
 
