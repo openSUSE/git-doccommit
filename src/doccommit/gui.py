@@ -5,7 +5,6 @@ class commitGUI():
         self.commit_message = commit_message
         self.d = Dialog(dialog="dialog")
         self.d.set_background_title("Git commit for SUSE documentation")
-        self.select_files()
 
 
     def select_files(self):
@@ -20,6 +19,9 @@ class commitGUI():
 
     def show_diff(self):
         self.d.scrollbox(self.commit_message.docrepo.diff(True), height=30, width=78,title="Diff of staged files")
+        self.enter_subject()
+
+    def enter_subject(self):
         subject_info = """Insert subject. Use
  * keyword: Add, Remove or Change
  * maximum of 50 characters (length of input line)
@@ -31,6 +33,9 @@ The subject does not appear in doc update sections."""
             quit()
         else:
             self.enter_message()
+
+
+
 
 
     def enter_message(self):
@@ -47,10 +52,10 @@ the line.
 """
         code, txt = self.d.editbox_str(message_info+self.commit_message.input_message,
                                                       height=30, width=78)
-        self.commit_message.input_message = txt.split('------------------------------------------------------------------------')[1]
         if code == 'cancel':
             quit()
         else:
+            self.commit_message.input_message = txt.split('------------------------------------------------------------------------')[1]
             self.enter_xml_ids()
 
 
@@ -111,7 +116,7 @@ another commit. The commits will be merged in the doc update section."""
         Format commit message and display
         """
         validation = self.commit_message.format()
-        if "success" not in validation:
+        if validation is not None:
             title = "Linting result"
             text = "The following problems have been found:\n\n"
             for item in validation:
@@ -127,6 +132,6 @@ another commit. The commits will be merged in the doc update section."""
         if code == "ok" and commit:
             print("committing!")
         elif code == "ok" and not commit:
-            self.enter_message()
+            self.enter_subject()
         else:
             quit()

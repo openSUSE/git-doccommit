@@ -104,7 +104,7 @@ class CommitMessage():
             problems.append("Subject longer than 50 characters.")
 
         keywords = ['Add', 'Remove', 'Change']
-        if not any(keyword in 'some one long two phrase three' for keyword in keywords):
+        if not any(keyword in self.subject for keyword in keywords):
             problems.append("No keyword found in subject.")
 
         if len(self.input_message) < len(self.subject):

@@ -78,6 +78,7 @@ setup(
     entry_points={
         'console_scripts': [
             'git-doccommit = doccommit.cli:main',
+            'git-docupdate = doccommit.cli.docupdate'
         ]
     },
 )
