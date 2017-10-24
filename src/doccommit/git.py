@@ -42,28 +42,56 @@ class CommitMessage():
         self.input_message = args.message if args.message is not None else ""
 
 
-    def validate_reference(self, no_add=True):
+    def validate_references(self, add=False):
         """
-        Validate reference. Must contain a keyword like bsc, fate and a number.
+        Validate the references string
         """
+        if '#' not in self.reference:
+            return "Reference does not contain a number (#) sign."
+        if ',' not in self.reference:
+            result = self.validate_reference(self.reference, add)
+            if result == "success":
+                return "success"
+            else:
+                return [result]
+        else:
+            error_list = []
+            for single_reference in self.reference.split(','):
+                result = self.validate_reference(single_reference, add)
+                if not result == "success":
+                    error_list.append(result)
+            if error_list:
+                return error_list
+            else:
+                return "success"
+
+
+    def validate_reference(self, single_reference, add):
         valid_references = ['bsc', 'bnc', 'boo', 'fate', 'doccomment', 'gh', 'trello']
         # gh ?
         # trello ? often private
         # open tracker bug for all sources that are not covered
-        if '#' not in self.reference:
-            return "Reference does not contain a number (#) sign."
-        for single_reference in self.reference.split(','):
-            [ref_type, ref_id] = single_reference.split('#')
-            if type.lower() not in valid_references:
-                return "Unknown reference type."
-            try:
-                ref_id = int(ref_id)
-            except ValueError:
-                return "Reference ID is not a number."
-            if not no_add:
-                self.reference_types.append(ref_type)
-                self.reference_ids.append(ref_id)
+        [ref_type, ref_id] = single_reference.split('#')
+        if ref_type.lower() not in valid_references:
+            return single_reference+": Unknown reference type."
+        try:
+            ref_id = int(ref_id)
+        except ValueError:
+            return single_reference+": Reference ID is not a number."
+        if add:
+            self.reference_types.append(ref_type)
+            self.reference_ids.append(ref_id)
+        return "success"
 
+
+    def validate_merge_commits(self):
+        """
+        Validate merge commit hashes
+        """
+        invalid_commits = []
+        for commit in self.merge_commits.split(','):
+            if not self.docrepo.commit_exists(commit.strip()):
+                invalid_commits.append(commit)
         return "success"
 
 
@@ -86,7 +114,7 @@ class CommitMessage():
             if len(line) > 72:
                 problems.append("Message line longer than 72 characters.")
 
-        validate_reference = self.validate_reference()
+        validate_reference = self.validate_references(True)
         if "success" not in validate_reference:
             problems.append(validate_reference)
 
@@ -102,11 +130,7 @@ class CommitMessage():
         """
         validation = self.validate()
         if "success" not in validation:
-            if show_messages:
-                print("Your commit message does not yet meet the requirements:")
-                for item in validation:
-                    print("- "+item)
-            return False
+            return validation
 
         result = self.subject + "\n\n" + self.input_message + "\n\n" + "XML IDs: "
         more = False
@@ -167,9 +191,19 @@ class DocRepo():
     def commit(self, message):
         pass
 
-    def log(max=20, from_hash=None, to_hash=None):
+
+    def log(self, max=20, from_hash=None, to_hash=None):
         pass
 
+
+    def commit_exists(self, commit_hash):
+        try:
+            if self.repo.get(commit_hash.strip()):
+                return True
+            else:
+                return False
+        except ValueError:
+            return False
 
 def find_root(path=os.getcwd()):
     """
