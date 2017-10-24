@@ -15,42 +15,54 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import argparse
+import sys
+import os
 from doccommit import git
 from doccommit import gui
 
-parser = argparse.ArgumentParser(description='Command description.')
-parser = argparse.ArgumentParser(description="""This git subcommand helps to create well
-formatted git commits. They can be used to automatically create doc update sections for for SUSE
-documentation.""")
 
-subparsers = parser.add_subparsers(help='sub-command --help')
+def parse_cli(args=None):
+    """
+    Parse command line arguments with argparse
+    """
+    parser = argparse.ArgumentParser(description='Command description.')
+    parser = argparse.ArgumentParser(description="""This git subcommand helps to create well
+    formatted git commits. They can be used to automatically create doc update sections for for SUSE
+    documentation.""")
 
-parser_a = subparsers.add_parser('commit', help='commit --help')
-parser_a.add_argument('-i', '--interactive', action='store_true', help='Start in interactive mode')
-parser_a.add_argument('-m', metavar='message', dest='message', type=str, help='Commit message')
-parser_a.add_argument('-s', metavar='subject', dest='subject', type=str, help='Commit subject')
-parser_a.add_argument('-l', metavar='XML IDs', dest='xml_ids', type=str, help='List of affected XML IDs')
-parser_a.add_argument('-r', metavar='BSC/FATE/etc', dest='reference', type=str, help='Reference Bug or FATE entry')
-parser_a.add_argument('-c', metavar='Commit hashes', dest='merge_commits', type=str, help='Reference Bug or FATE entry')
-parser_a.set_defaults(command='commit')
+    subparsers = parser.add_subparsers(help='sub-command --help')
 
-parser_b = subparsers.add_parser('docupdate', help='docupdate --help')
-parser_b.add_argument('--file', type=str, help='Path to the XML file containing the doc update section')
-parser_b.set_defaults(command='docupdate')
+    parser_a = subparsers.add_parser('commit', help='commit --help')
+    parser_a.add_argument('-i', '--interactive', action='store_true', help='Start in interactive mode')
+    parser_a.add_argument('-m', metavar='message', dest='message', type=str, help='Commit message')
+    parser_a.add_argument('-s', metavar='subject', dest='subject', type=str, help='Commit subject')
+    parser_a.add_argument('-x', metavar='XML IDs', dest='xml_ids', type=str, help='Comma separated list of affected XML IDs')
+    parser_a.add_argument('-r', metavar='BSC/FATE/etc', dest='reference', type=str, help='Comma separated list of Bugzilla or FATE entries, e.g. FATE#12435 or BSC#12435')
+    parser_a.add_argument('-c', metavar='Commit hashes', dest='merge_commits', type=str, help='Merge hashes in doc updates into one item')
+    parser_a.add_argument('-u', metavar='Commit hash', dest='update_commit', type=str, help='Update existing commit message (uses git notes)')
+    parser_a.add_argument('-a', '--auto-wrap', dest='update_commit', action='store_true', help='Automatic line wrap for message text')
+    parser_a.set_defaults(command='commit')
+
+    parser_b = subparsers.add_parser('docupdate', help='docupdate --help')
+    parser_b.add_argument('--file', type=str, help='Path to the XML file containing the doc update section')
+    parser_b.set_defaults(command='docupdate')
+    return parser.parse_args(args=args)
 
 
 def main(args=None):
-    args = parser.parse_args(args=args)
-    print(args)
+    args = parse_cli(args)
+    if not len(sys.argv) > 1:
+        print("Nothing to do. Use --help")
+        quit()
+
+    path = git.find_root(os.getcwd())
+    docrepo = git.DocRepo(path)
     if args.command == "commit":
-        commitMessage = git.CommitMessage()
+        commit_message = git.CommitMessage(docrepo)
+        commit_message.parse_args(args)
         if args.interactive:
-            commitGUI = gui.CommitGUI(commitMessage)
-        else:
-            print("")
-        print("blaaaaaa")
-        commitMessage.require_xml_source_ids()
-        commitMessage.require_xml_source_ids()
-        commitMessage.require_xml_source_ids()
-        commitMessage.require_xml_source_ids()
-        print("do something")
+            gui.commitGUI(commit_message)
+        commit_message.commit()
+
+    elif args.command == "docupdate":
+        pass
