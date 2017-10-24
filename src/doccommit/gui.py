@@ -130,6 +130,7 @@ another commit. The commits will be merged in the doc update section."""
         code = self.d.yesno(text, height=30, width=78, title=title)
         print(code)
         if code == "ok" and commit:
+            print(self.commit_message.xml_ids)
             print("committing!")
         elif code == "ok" and not commit:
             self.enter_subject()

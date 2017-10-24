@@ -132,20 +132,12 @@ class CommitMessage():
         if "success" not in validation:
             return validation
 
-        result = self.subject + "\n\n" + self.input_message + "\n\n" + "XML IDs: "
-        more = False
-        for xml_id in self.xml_ids:
-            result = result + (", " if more else "") + "" + xml_id
-            more = True
+        result = self.subject + "\n" + self.input_message + "\n" + "XML IDs: "
+        result = result + self.xml_ids
+        if self.merge_commits != "":
+            result = result + "\n\nDocUpdate Merge: " + self.merge_commits 
 
-        result = result + "\n\n" + "DocUpdate Merge: "
-
-        more = False
-        for merge_commit in self.merge_commits:
-            result = result + (", " if more else "") + merge_commit
-            more = True
-
-        result = result + "~~ created by git-doccommit version 0.1.1"
+        result = result + "\n~~ created by git-doccommit version 0.1.1"
         self.final_message = result
 
 
