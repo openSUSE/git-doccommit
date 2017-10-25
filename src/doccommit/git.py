@@ -17,11 +17,12 @@ class CommitMessage():
         self.reference_types = []
         self.reference_ids = []
         self.subject = ""
-        self.xml_ids = []
+        self.xml_ids = ""
         self.merge_commits = ""
         self.input_message = ""
         self.final_message = ""
         self.docrepo = docrepo
+        self.problems = []
 
         # Make sure to call self.require_xml_source_ids() before using the
         # xml_source_ids dict.
@@ -46,24 +47,14 @@ class CommitMessage():
         """
         Validate the references string
         """
+        no_problem = True
         if '#' not in self.reference:
-            return "Reference does not contain a number (#) sign."
-        if ',' not in self.reference:
-            result = self.validate_reference(self.reference, add)
-            if result == "success":
-                return "success"
-            else:
-                return [result]
-        else:
-            error_list = []
-            for single_reference in self.reference.split(','):
-                result = self.validate_reference(single_reference, add)
-                if not result == "success":
-                    error_list.append(result)
-            if error_list:
-                return error_list
-            else:
-                return "success"
+            self.problems.append("Reference does not contain a number (#) sign.")
+            return False
+        for single_reference in string_to_list(self.reference):
+            if not self.validate_reference(single_reference, add):
+                no_problem = False
+        return no_problem
 
 
     def validate_reference(self, single_reference, add):
@@ -71,66 +62,80 @@ class CommitMessage():
         # gh ?
         # trello ? often private
         # open tracker bug for all sources that are not covered
+        no_problem = True
         [ref_type, ref_id] = single_reference.split('#')
         if ref_type.lower() not in valid_references:
-            return single_reference+": Unknown reference type."
+            self.problems.append(single_reference+": Unknown reference type.")
+            no_problem = False
         try:
             ref_id = int(ref_id)
         except ValueError:
-            return single_reference+": Reference ID is not a number."
+            self.problems.append(single_reference+": Reference ID is not a number.")
+            no_problem = False
         if add:
             self.reference_types.append(ref_type)
             self.reference_ids.append(ref_id)
-        return "success"
+        return no_problem
 
 
     def validate_merge_commits(self):
         """
         Validate merge commit hashes
         """
-        invalid_commits = []
-        for commit in self.merge_commits.split(','):
-            if not self.docrepo.commit_exists(commit.strip()):
-                invalid_commits.append(commit)
-        return "success"
+        no_problem = True
+        for commit in string_to_list(self.merge_commits):
+            if not self.docrepo.commit_exists(commit):
+                self.problems.append(commit + " is not a valid commit ID.")
+                no_problem = False
+        return no_problem
+
+
+    def validate_xml_ids(self, remove_keyword=False):
+        if not self.xml_ids:
+            self.problems.append("No XML IDs entered.")
+            return False
+        if remove_keyword:
+            return True
+        self.require_xml_source_ids()
+        for xml_id in string_to_list(self.xml_ids):
+            if xml_id not in self.xml_source_ids:
+                self.problems.append(xml_id + " does not exist.")
 
 
     def validate(self):
         """
         Validates if the user input is good enough for a commit.
         """
-        problems = []
+        self.problems = []
         if len(self.subject) > 50:
-            problems.append("Subject longer than 50 characters.")
+            self.problems.append("Subject longer than 50 characters.")
 
         keywords = ['Add', 'Remove', 'Change']
         if not any(keyword in self.subject for keyword in keywords):
-            problems.append("No keyword found in subject.")
+            self.problems.append("No keyword found in subject.")
 
         if len(self.input_message) < len(self.subject):
-            problems.append("Subject is longer than description text.")
+            self.problems.append("Subject is longer than description text.")
 
         for line in self.input_message.splitlines():
             if len(line) > 72:
-                problems.append("Message line longer than 72 characters.")
+                self.problems.append("Message line longer than 72 characters.")
 
         validate_reference = self.validate_references(True)
         if "success" not in validate_reference:
-            problems.append(validate_reference)
+            self.problems.append(validate_reference)
 
-        if problems:
-            return problems
-        else:
-            return ["success"]
+        self.validate_xml_ids()
+
+        return bool(self.problems)
 
 
     def format(self, show_messages=True):
         """
         Create a formatted commit message.
         """
-        validation = self.validate()
-        if "success" not in validation:
-            return validation
+        if not self.validate():
+            return False
 
         result = self.subject + "\n" + self.input_message + "\n" + "XML IDs: "
         result = result + self.xml_ids
@@ -214,3 +219,12 @@ def get_log(n=20, from_hash="", to_hash=""):
     Get the last 20 commits, or alternatively from from_hash to to_hash.
     """
     pass
+
+def string_to_list(csv):
+    """
+    Turns a csv input string into a list
+    """
+    if ',' in csv:
+        return csv.split(',').strip()
+    else:
+        return [csv.strip()]
