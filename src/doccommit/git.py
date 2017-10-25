@@ -137,7 +137,7 @@ class CommitMessage():
         if self.merge_commits != "":
             result = result + "\n\nDocUpdate Merge: " + self.merge_commits 
 
-        result = result + "\n~~ created by git-doccommit version 0.2.0"
+        result = result + "\n~~ created by git-doccommit version 0.2.1"
         self.final_message = result
 
 
