@@ -77,8 +77,8 @@ setup(
     install_requires=requires('requirements.txt'),
     entry_points={
         'console_scripts': [
-            'git-doccommit = doccommit.cli:main',
-            'git-docupdate = doccommit.cli.docupdate'
+            'git-doccommit = doccommit.cli:doccommit',
+            'git-docupdate = doccommit.cli:docupdate'
         ]
     },
 )
