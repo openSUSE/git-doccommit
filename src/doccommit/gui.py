@@ -1,16 +1,58 @@
+"""
+Classes and methods used for interactive mode
+"""
+import subprocess
 from dialog import Dialog
 
+
+subject_info = """# Insert subject. Use
+# * keyword: Add, Remove or Change
+# * maximum of 50 characters (length of input line)
+#
+# The subject does not appear in doc update sections."""
+
+message_info = """# What has changed and why? Be verbose. Do not
+# use more than 72 characters per line.abs
+#
+# Use ## to automatically insert a list of all references and @@ for a
+# list of XML IDs. Single IDs can be inserted with a @ sign, for
+# example @sec.example.id
+#
+# This text will be used for the doc update section. Enter text below
+# the line.\n"""
+
+id_info = """# Enter a comma separated list of section or chapter XML IDs
+# that were changed."""
+
+reference_info = """# Enter a comma separated list of issues (references), for example
+# BSC#12435 or FATE#12345. If this is a minor update that does not belong
+# into the doc update section, enter the word MINOR."""
+
+commit_info = """# Optional, enter a commit hash if this change is directly related to
+# another commit. The commits will be merged in the doc update section."""
+
+
 class commitGUI():
-    def __init__(self, commit_message):
+    """
+    Class that steps through a dialog and asks the user for the required input.
+    The input will be validated immediatly.
+    """
+    def __init__(self, commit_message, args):
         self.commit_message = commit_message
         self.d = Dialog(dialog="dialog")
         self.d.set_background_title("Git commit for SUSE documentation")
+        self.interactive = True if args.interactive is True else False
+        self.editor = True if args.editor is True else False
 
 
     def select_files(self):
+        """
+        Stage and unstage files
+        """
         code, tags = self.d.checklist("Select files",
-                                choices=[(filename, "", status) for filename, status in self.commit_message.docrepo.stage()],
-                                title="Select the files that should be committed.")
+                                      choices=[(filename, "", status) for filename,
+                                               status in self.commit_message.docrepo.stage()],
+                                      title="Select the files that should be committed.")
         if code == "cancel":
             quit()
         else:
@@ -18,49 +60,45 @@ class commitGUI():
 
 
     def show_diff(self):
-        self.d.scrollbox(self.commit_message.docrepo.diff(True), height=30, width=78,title="Diff of staged files")
+        """
+        Show the diff of staged files
+        """
+        self.d.scrollbox(self.commit_message.docrepo.diff(True), height=30, width=78, \
+                         title="Diff of staged files")
         self.enter_subject()
 
     def enter_subject(self):
-        subject_info = """Insert subject. Use
- * keyword: Add, Remove or Change
- * maximum of 50 characters (length of input line)
-
-The subject does not appear in doc update sections."""
         code, self.commit_message.subject = self.d.inputbox(subject_info, height=11, width=56,
-                                              init=self.commit_message.subject)
+                                                            init=self.commit_message.subject)
         if code == 'cancel':
             quit()
         else:
             self.enter_message()
 
 
-
-
-
-    def enter_message(self):
-        message_info = """What has changed and why? Be verbose. Do not
-use more than 72 characters per line.abs
-
-Use ## to automatically insert a list of all references and @@ for a
-list of XML IDs. Single IDs can be inserted with a @ sign, for
-example @sec.example.id
-    
-This text will be used for the doc update section. Enter text below
-the line.
-------------------------------------------------------------------------
-"""
-        code, txt = self.d.editbox_str(message_info+self.commit_message.input_message,
-                                                      height=30, width=78)
+    def enter_message(self, problems=None):
+        global message_info
+        line = '------------------------------------------------------------------------'
+        if problems is not None:
+            message_info = message_info + "\nFix the following problems:\n"
+            for problem in problems:
+                message_info = message_info + "* " + problem + "\n"
+        message_info = message_info + line+"\n" + \
+                       self.commit_message.input_message
+        code, txt = self.d.editbox_str(message_info, height=30, width=78)
         if code == 'cancel':
             quit()
         else:
-            self.commit_message.input_message = txt.split('------------------------------------------------------------------------')[1]
-            self.enter_xml_ids()
+            self.commit_message.input_message = txt.split(line)[1].strip('').strip('\n')
+            self.commit_message.problems = []
+            if not self.commit_message.validate_message():
+                self.enter_message(self.commit_message.problems)
+            else:
+                self.enter_xml_ids()
 
 
     def enter_xml_ids(self, unknown_ids=None):
-        id_info = """Enter a comma separated list of section or chapter XML IDs that were changed."""
+        global id_info
         if unknown_ids is not None:
             id_info = id_info + "\n\nThe following XML IDs are invalid:\n"
             for id in unknown_ids:
@@ -69,45 +107,41 @@ the line.
                                               init=self.commit_message.xml_ids)
         if code == 'cancel':
             quit()
-        else:
-            self.commit_message.require_xml_source_ids()
-            invalid_ids = []
-            for id in self.commit_message.xml_ids.split(","):
-                if id.strip() not in self.commit_message.xml_source_ids:
-                    invalid_ids.append(id.strip())
-            if invalid_ids and "Remove" not in self.commit_message.subject:
-                self.enter_xml_ids(invalid_ids)
-            else:
-                self.enter_references()
+        self.commit_message.problems = []
+        if not self.commit_message.validate_xml_ids():
+            self.enter_xml_ids(self.commit_message.problems)
+        self.enter_references()
 
 
     def enter_references(self, invalid_references=None):
-        reference_info = """Enter a comma separated list of issues (references), for example
-BSC#12435 or FATE#12345"""
+        global reference_info
         if invalid_references is not None:
             reference_info = reference_info + "\n\nThe following references are invalid:\n"
             for reference in invalid_references:
                 reference_info = reference_info + "* "+reference+"\n"
         code, self.commit_message.reference = self.d.inputbox(reference_info, height=20, width=78,
                                                               init=self.commit_message.reference)
-        result = self.commit_message.validate_references()
-        if not result == "success":
-            self.enter_references(result)
+        if code == 'cancel':
+            quit()
+        self.commit_message.problems = []
+        if not self.commit_message.validate_references():
+            self.enter_references(self.commit_message.problems)
         self.enter_commits()
 
 
     def enter_commits(self, invalid_commits=None):
-        commit_info = """Optional, enter a commit hash if this change is directly related to
-another commit. The commits will be merged in the doc update section."""
+        global commit_info
         if invalid_commits is not None:
             commit_info = commit_info + "\n\nThe following commit hashes are invalid:\n"
             for commit in invalid_commits:
                 commit_info = commit_info + "* "+commit+"\n"
-        code, self.commit_message.merge_commits = self.d.inputbox(commit_info, height=10, width=78,
+        code, self.commit_message.merge_commits = self.d.inputbox(commit_info, height=15, width=78,
                                                                   init=self.commit_message.merge_commits)
-        result = self.commit_message.validate_merge_commits()
-        if not result == "success":
-            self.enter_commits(result)
+        if code == 'cancel':
+            quit()
+        self.commit_message.problems = []
+        if self.commit_message.merge_commits and not self.commit_message.validate_merge_commits():
+            self.enter_commits(self.commit_message.problems)
         self.final_check()
 
 
@@ -115,24 +149,42 @@ another commit. The commits will be merged in the doc update section."""
         """
         Format commit message and display
         """
-        validation = self.commit_message.format()
-        if validation is not None:
-            title = "Linting result"
-            text = "The following problems have been found:\n\n"
-            for item in validation:
-                text = text+ "* "+item+"\n"
-            text = text + self.commit_message.final_message + "\n\n\nReturn to beginning?"
+        text = ""
+        if not self.commit_message.format(self.editor):
+            text = "# The following problems have been found:\n"
+            for item in self.commit_message.problems:
+                text = text + "# * "+item+"\n"
+            text = text + '\n'
             commit = False
         else:
-            title = "Final check"
-            text = self.commit_message.final_message + "\n\n\nContinue?"
             commit = True
-        code = self.d.yesno(text, height=30, width=78, title=title)
-        print(code)
-        if code == "ok" and commit:
-            print(self.commit_message.xml_ids)
-            print("committing!")
-        elif code == "ok" and not commit:
-            self.enter_subject()
+        if self.editor:
+            with open('/tmp/.doccommit', 'w') as f:
+                f.write(text + self.commit_message.final_message)
+            subprocess.call(['vim', '/tmp/.doccommit'])
+            self.commit_message.parse_commit_message(open('/tmp/.doccommit', 'r').read())
+            self.commit_message.problems = []
+            if self.commit_message.validate():
+                print(self.commit_message.problems)
+                print("commit")
+            else:
+                asdf = input("Your input does not validate. Retry? [Y|n]")
+                if asdf.lower() == 'n':
+                    quit()
+                else:
+                    self.final_check()
         else:
-            quit()
+            if commit:
+                title = "Final check"
+                text = self.commit_message.final_message + "\n\n# ---\n# Continue?"
+            else:
+                title = "Linting result"
+                text = text + self.commit_message.final_message + "\n\n\n# Return to beginning?"
+            code = self.d.yesno(text, height=30, width=78, title=title)
+            if code == "ok" and commit:
+                print(self.commit_message.xml_ids)
+                print("committing!")
+            elif code == "ok" and not commit:
+                self.enter_subject()
+            else:
+                quit()

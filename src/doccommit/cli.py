@@ -37,6 +37,7 @@ def parse_cli_commit(args=None):
     parser.add_argument('-c', metavar='Commit hashes', dest='merge_commits', type=str, help='Merge hashes in doc updates into one item')
     parser.add_argument('-u', metavar='Commit hash', dest='update_commit', type=str, help='Update existing commit message (uses git notes)')
     parser.add_argument('-a', '--auto-wrap', dest='update_commit', action='store_true', help='Automatic line wrap for message text')
+    parser.add_argument('-e', '--editor', action='store_true', help='Final check is performed in the default editor')
     parser.set_defaults(command='commit')
 
     return parser.parse_args(args=args)
@@ -61,18 +62,13 @@ def doccommit(args=None):
 
     path = git.find_root(os.getcwd())
     docrepo = git.DocRepo(path)
-    if args.command == "commit":
-        commit_message = git.CommitMessage(docrepo)
-        commit_message.parse_args(args)
-        my_gui = gui.commitGUI(commit_message)
-        if args.interactive:
-            my_gui.select_files()
-        else:
-            my_gui.final_check()
-        commit_message.commit()
-
-    elif args.command == "docupdate":
-        pass
+    commit_message = git.CommitMessage(docrepo, args)
+    my_gui = gui.commitGUI(commit_message, args)
+    if args.interactive:
+        my_gui.select_files()
+    else:
+        my_gui.final_check()
+    commit_message.commit()
 
 def docupdate(args=None):
     args = parse_cli_docupdate(args)
