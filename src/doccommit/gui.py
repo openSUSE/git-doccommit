@@ -9,7 +9,8 @@ subject_info = """# Insert subject. Use
 # * keyword: Add, Remove or Change
 # * maximum of 50 characters (length of input line)
 #
-# The subject does not appear in doc update sections."""
+# The subject does not appear in doc update
+# sections."""
 
 message_info = """# What has changed and why? Be verbose. Do not
 # use more than 72 characters per line.abs
@@ -19,7 +20,7 @@ message_info = """# What has changed and why? Be verbose. Do not
 # example @sec.example.id
 #
 # This text will be used for the doc update section. Enter text below
-# the line.\n"""
+# the line."""
 
 id_info = """# Enter a comma separated list of section or chapter XML IDs
 # that were changed."""
@@ -49,13 +50,23 @@ class commitGUI():
         """
         Stage and unstage files
         """
-        code, tags = self.d.checklist("Select files",
+        all_files = []
+        for filename, status in self.commit_message.docrepo.stage():
+            all_files.append(filename)
+        if not all_files:
+            print("No changed files in repository. Exiting ...")
+            quit()
+        code, filenames = self.d.checklist("Select files",
                                       choices=[(filename, "", status) for filename,
                                                status in self.commit_message.docrepo.stage()],
                                       title="Select the files that should be committed.")
         if code == "cancel":
             quit()
         else:
+            self.commit_message.docrepo.stage_add_all()
+            for filename in all_files:
+                if filename not in filenames:
+                    self.commit_message.docrepo.remove(filename)
             self.show_diff()
 
 
@@ -67,29 +78,32 @@ class commitGUI():
                          title="Diff of staged files")
         self.enter_subject()
 
+
     def enter_subject(self):
-        code, self.commit_message.subject = self.d.inputbox(subject_info, height=11, width=56,
+        code, self.commit_message.subject = self.d.inputbox(subject_info, height=15, width=56,
                                                             init=self.commit_message.subject)
         if code == 'cancel':
             quit()
         else:
-            self.enter_message()
+            if self.commit_message.validate_subject():
+                self.enter_message()
+            else:
+                self.enter_subject()
 
 
     def enter_message(self, problems=None):
         global message_info
-        line = '------------------------------------------------------------------------'
         if problems is not None:
             message_info = message_info + "\nFix the following problems:\n"
             for problem in problems:
                 message_info = message_info + "* " + problem + "\n"
-        message_info = message_info + line+"\n" + \
+        message_info = message_info + "\n" + \
                        self.commit_message.input_message
         code, txt = self.d.editbox_str(message_info, height=30, width=78)
         if code == 'cancel':
             quit()
         else:
-            self.commit_message.input_message = txt.split(line)[1].strip('').strip('\n')
+            self.commit_message.input_message = "\n".join([line for line in txt.splitlines() if not line.startswith("#") ])
             self.commit_message.problems = []
             if not self.commit_message.validate_message():
                 self.enter_message(self.commit_message.problems)
@@ -101,10 +115,10 @@ class commitGUI():
         global id_info
         if unknown_ids is not None:
             id_info = id_info + "\n\nThe following XML IDs are invalid:\n"
-            for id in unknown_ids:
-                id_info = id_info + "* "+id+"\n"
+            for xml_id in unknown_ids:
+                id_info = id_info + "* " + xml_id + "\n"
         code, self.commit_message.xml_ids = self.d.inputbox(id_info, height=20, width=78,
-                                              init=self.commit_message.xml_ids)
+                                                            init=self.commit_message.xml_ids)
         if code == 'cancel':
             quit()
         self.commit_message.problems = []
@@ -165,8 +179,7 @@ class commitGUI():
             self.commit_message.parse_commit_message(open('/tmp/.doccommit', 'r').read())
             self.commit_message.problems = []
             if self.commit_message.validate():
-                print(self.commit_message.problems)
-                print("commit")
+                self.commit_message.commit()
             else:
                 asdf = input("Your input does not validate. Retry? [Y|n]")
                 if asdf.lower() == 'n':
@@ -182,8 +195,7 @@ class commitGUI():
                 text = text + self.commit_message.final_message + "\n\n\n# Return to beginning?"
             code = self.d.yesno(text, height=30, width=78, title=title)
             if code == "ok" and commit:
-                print(self.commit_message.xml_ids)
-                print("committing!")
+                self.commit_message.commit()
             elif code == "ok" and not commit:
                 self.enter_subject()
             else:

@@ -11,6 +11,9 @@ from doccommit import xml
 from doccommit.gui import id_info, reference_info, subject_info, message_info, commit_info
 
 class CommitMessage():
+    """
+    This class stores, formats and parses commit messages.
+    """
     def __init__(self, docrepo, args=None, commit_text=None):
         self.final_message = ""
         self.docrepo = docrepo
@@ -79,6 +82,8 @@ class CommitMessage():
         """
         Validate the references string
         """
+        self.normalize_reference()
+        print(self.reference)
         no_problem = True
         if '#' not in self.reference and self.reference != 'MINOR':
             self.problems.append("Reference does not contain a number (#) sign.")
@@ -91,17 +96,41 @@ class CommitMessage():
         return no_problem
 
 
+    def normalize_reference(self):
+        import re
+        references = self.reference.split(",")
+        regexes = []
+        result = []
+        # normalize bsc
+        regexes.append((re.compile(r'(?i)(bsc#|boo#|bnc#)(?P<id>[0-9]+)'), 'bsc#\g<id>'))
+        regexes.append((re.compile(r'((http[s]?):\/\/)(bugzilla.)(opensuse.org|(suse|novell).com)/show_bug\.cgi\?id=(?P<id>[0-9]+).*'), 'bsc#\g<id>'))
+        #normalize FATE
+        regexes.append((re.compile(r'(?i)(fate#)(?P<id>[0-9]+)'), 'FATE#\g<id>'))
+        regexes.append((re.compile(r'((http[s]?):\/\/)(fate.suse.com\/)(?P<id>[0-9]+).*'), 'FATE#\g<id>'))
+        #normalize doccomment
+        regexes.append((re.compile(r'(?i)(doccomments?#|dc#)(?P<id>[0-9]+)'), 'dc#\g<id>'))
+        regexes.append((re.compile(r'((http[s]?):\/\/)(doccomments.provo.novell.com\/33098\/)(?P<id>[0-9]+)/.*'), 'dc#\g<id>'))
+        for reference in references:
+            for regex, substitute in regexes:
+                reference, n = regex.subn(substitute, reference)
+                if n > 0:
+                    result.append(reference)
+
+        self.reference = ", ".join(result)
+        print(self.reference)
+
+
     def validate_reference(self, single_reference):
         """
         Validate if a reference is formatted as SOURCE#ID
         """
-        valid_references = ['bsc', 'bnc', 'boo', 'fate', 'doccomment', 'gh', 'trello']
+        valid_references = ['bsc', 'FATE', 'dc']
         # gh ?
         # trello ? often private
         # open tracker bug for all sources that are not covered
         no_problem = True
         [ref_type, ref_id] = single_reference.split('#')
-        if ref_type.lower() not in valid_references:
+        if ref_type not in valid_references:
             self.problems.append(single_reference+": Unknown reference type.")
             no_problem = False
         try:
@@ -222,7 +251,7 @@ class CommitMessage():
         """
 
         if self.format():
-            print("committing...")
+            self.docrepo.commit(self.final_message)
         else:
             return False
 
@@ -238,29 +267,52 @@ class CommitMessage():
 class DocRepo():
     def __init__(self, path):
         self.repo = pygit2.Repository(path)
+        self.last_commit = ""
 
 
     def diff(self, cached=True):
-        return str(self.repo.diff(cached=cached).patch)
+        return str(self.repo.diff('HEAD',cached=cached).patch)
 
     def stage(self):
         """
         Returns staged files as tuple (string filename, boolean staged)
         """
+        self.repo.index.read()
         for filename, code in self.repo.status().items():
-            print(filename, code)
             if code == 2:
                 yield (filename, True)
             elif code == 128 or code == 256:
                 yield (filename, False)
 
+    def staged_files(self):
+        for filename, code in self.repo.status().items():
+            if code == 2:
+                yield (filename, True)
+            else:
+                pass
+
+
+    def stage_remove(self, filename):
+        staged_files = self.staged_files()
+        if filename not in staged_files:
+            self.repo.index.remove(filename)
+        self.repo.index.write()
+
+
+    def stage_add_all(self):
+        self.repo.index.add_all()
+        self.repo.index.write()
+
 
     def commit(self, message):
-        pass
-
-
-    def log(self, max=20, from_hash=None, to_hash=None):
-        pass
+        oid = self.repo.create_commit(self.repo.head.name,
+                                      self.repo.default_signature,
+                                      self.repo.default_signature, message,
+                                      self.repo.index.write_tree(),
+                                      [self.repo.head.get_object().hex])
+        self.last_commit = oid
+        self.repo.index.write()
+        return oid
 
 
     def commit_exists(self, commit_hash):
@@ -284,12 +336,6 @@ def find_root(path=os.getcwd()):
     else:
         return path
 
-
-def get_log(n=20, from_hash="", to_hash=""):
-    """
-    Get the last 20 commits, or alternatively from from_hash to to_hash.
-    """
-    pass
 
 
 def string_to_list(csv):
