@@ -24,9 +24,9 @@ Overview
     :alt: PyPI Package latest release
     :target: https://pypi.python.org/pypi/git-doccommit
 
-.. |commits-since| image:: https://img.shields.io/github/commits-since/svenseeberg/git-doccommit/v0.4.0.svg
+.. |commits-since| image:: https://img.shields.io/github/commits-since/svenseeberg/git-doccommit/v0.5.0.svg
     :alt: Commits since latest release
-    :target: https://github.com/svenseeberg/git-doccommit/compare/v0.4.0...master
+    :target: https://github.com/svenseeberg/git-doccommit/compare/v0.5.0...master
 
 .. |wheel| image:: https://img.shields.io/pypi/wheel/git-doccommit.svg
     :alt: PyPI Wheel
