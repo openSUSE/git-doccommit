@@ -83,7 +83,6 @@ class CommitMessage():
         Validate the references string
         """
         self.normalize_reference()
-        print(self.reference)
         no_problem = True
         if '#' not in self.reference and self.reference != 'MINOR':
             self.problems.append("Reference does not contain a number (#) sign.")
@@ -116,8 +115,7 @@ class CommitMessage():
                 if n > 0:
                     result.append(reference)
 
-        self.reference = ", ".join(result)
-        print(self.reference)
+        self.reference = ",".join(result)
 
 
     def validate_reference(self, single_reference):
@@ -227,7 +225,7 @@ class CommitMessage():
             result = result + subject_info + "\n"
         result = result + self.subject + "\n\n"
         if comments:
-            result = result + message_info
+            result = result + message_info + "\n"
         result = result + self.input_message + "\n\n"
         if comments:
             result = result + reference_info + "\n"
@@ -249,7 +247,6 @@ class CommitMessage():
         """
         Commit a message or write update to git notes if update=COMMITHASH is set.
         """
-
         if self.format():
             self.docrepo.commit(self.final_message)
         else:
@@ -311,7 +308,6 @@ class DocRepo():
                                       self.repo.index.write_tree(),
                                       [self.repo.head.get_object().hex])
         self.last_commit = oid
-        self.repo.index.write()
         return oid
 
 

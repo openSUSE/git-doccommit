@@ -66,7 +66,7 @@ class commitGUI():
             self.commit_message.docrepo.stage_add_all()
             for filename in all_files:
                 if filename not in filenames:
-                    self.commit_message.docrepo.remove(filename)
+                    self.commit_message.docrepo.stage_remove(filename)
             self.show_diff()
 
 
@@ -179,7 +179,9 @@ class commitGUI():
             self.commit_message.parse_commit_message(open('/tmp/.doccommit', 'r').read())
             self.commit_message.problems = []
             if self.commit_message.validate():
+                print("Committing (editor)")
                 self.commit_message.commit()
+                quit()
             else:
                 asdf = input("Your input does not validate. Retry? [Y|n]")
                 if asdf.lower() == 'n':
@@ -195,7 +197,9 @@ class commitGUI():
                 text = text + self.commit_message.final_message + "\n\n\n# Return to beginning?"
             code = self.d.yesno(text, height=30, width=78, title=title)
             if code == "ok" and commit:
+                print("Committing (interactive)")
                 self.commit_message.commit()
+                quit()
             elif code == "ok" and not commit:
                 self.enter_subject()
             else:
