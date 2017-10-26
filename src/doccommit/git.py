@@ -268,7 +268,7 @@ class DocRepo():
 
 
     def diff(self, cached=True):
-        return str(self.repo.diff('HEAD',cached=cached).patch)
+        return str(self.repo.diff('HEAD', cached=cached).patch)
 
     def stage(self):
         """
@@ -289,11 +289,14 @@ class DocRepo():
                 pass
 
 
-    def stage_remove(self, filename):
-        staged_files = self.staged_files()
-        if filename not in staged_files:
-            self.repo.index.remove(filename)
+    def stage_add_file(self, filename):
+        self.repo.index.add(filename)
         self.repo.index.write()
+
+
+    def stage_remove(self):
+        self.repo.reset(self.repo.head.get_object().hex, pygit2.GIT_RESET_MIXED)
+        self.repo.index.read()
 
 
     def stage_add_all(self):
@@ -319,6 +322,11 @@ class DocRepo():
                 return False
         except ValueError:
             return False
+
+
+    def reset_repo(self):
+        self.repo.reset(self.repo.head.get_object().hex, pygit2.GIT_RESET_MIXED)
+        self.repo.index.read()
 
 
 def find_root(path=os.getcwd()):

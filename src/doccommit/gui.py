@@ -55,19 +55,26 @@ class commitGUI():
             all_files.append(filename)
         if not all_files:
             print("No changed files in repository. Exiting ...")
+            self.commit_message.docrepo.reset_repo()
             quit()
         code, filenames = self.d.checklist("Select files",
                                       choices=[(filename, "", status) for filename,
                                                status in self.commit_message.docrepo.stage()],
                                       title="Select the files that should be committed.")
         if code == "cancel":
+            self.commit_message.docrepo.reset_repo()
             quit()
         else:
-            self.commit_message.docrepo.stage_add_all()
-            for filename in all_files:
-                if filename not in filenames:
-                    self.commit_message.docrepo.stage_remove(filename)
-            self.show_diff()
+            self.commit_message.docrepo.stage_remove()
+            got_file = False
+            for filename in filenames:
+                self.commit_message.docrepo.stage_add_file(filename)
+                got_file = True
+            if got_file:
+                self.show_diff()
+            else:
+                print("No files selected.")
+                quit()
 
 
     def show_diff(self):
@@ -83,6 +90,7 @@ class commitGUI():
         code, self.commit_message.subject = self.d.inputbox(subject_info, height=15, width=56,
                                                             init=self.commit_message.subject)
         if code == 'cancel':
+            self.commit_message.docrepo.reset_repo()
             quit()
         else:
             if self.commit_message.validate_subject():
@@ -101,6 +109,7 @@ class commitGUI():
                        self.commit_message.input_message
         code, txt = self.d.editbox_str(message_info, height=30, width=78)
         if code == 'cancel':
+            self.commit_message.docrepo.reset_repo()
             quit()
         else:
             self.commit_message.input_message = "\n".join([line for line in txt.splitlines() if not line.startswith("#") ])
@@ -120,6 +129,7 @@ class commitGUI():
         code, self.commit_message.xml_ids = self.d.inputbox(id_info, height=20, width=78,
                                                             init=self.commit_message.xml_ids)
         if code == 'cancel':
+            self.commit_message.docrepo.reset_repo()
             quit()
         self.commit_message.problems = []
         if not self.commit_message.validate_xml_ids():
@@ -179,12 +189,17 @@ class commitGUI():
             self.commit_message.parse_commit_message(open('/tmp/.doccommit', 'r').read())
             self.commit_message.problems = []
             if self.commit_message.validate():
-                print("Committing (editor)")
-                self.commit_message.commit()
-                quit()
+                asdf = input("Do you want to commit? [Y|n]")
+                if asdf.lower() != 'y' and asdf != '':
+                    quit()
+                    self.commit_message.docrepo.reset_repo()
+                else:
+                    self.commit_message.commit()
+                    quit()
             else:
                 asdf = input("Your input does not validate. Retry? [Y|n]")
                 if asdf.lower() == 'n':
+                    self.commit_message.docrepo.reset_repo()
                     quit()
                 else:
                     self.final_check()
@@ -203,4 +218,5 @@ class commitGUI():
             elif code == "ok" and not commit:
                 self.enter_subject()
             else:
+                self.commit_message.docrepo.reset_repo()
                 quit()
