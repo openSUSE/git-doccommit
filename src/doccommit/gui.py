@@ -101,13 +101,14 @@ class commitGUI():
 
     def enter_message(self, problems=None):
         global message_info
+        message_info_tmp = message_info
         if problems is not None:
-            message_info = message_info + "\nFix the following problems:\n"
+            message_info_tmp = message_info_tmp + "\nFix the following problems:\n"
             for problem in problems:
-                message_info = message_info + "* " + problem + "\n"
-        message_info = message_info + "\n" + \
+                message_info_tmp = message_info_tmp + "* " + problem + "\n"
+        message_info_tmp = message_info_tmp + "\n" + \
                        self.commit_message.input_message
-        code, txt = self.d.editbox_str(message_info, height=30, width=78)
+        code, txt = self.d.editbox_str(message_info_tmp, height=30, width=78)
         if code == 'cancel':
             self.commit_message.docrepo.reset_repo()
             quit()
@@ -122,11 +123,12 @@ class commitGUI():
 
     def enter_xml_ids(self, unknown_ids=None):
         global id_info
+        id_info_tmp = id_info
         if unknown_ids is not None:
-            id_info = id_info + "\n\nThe following XML IDs are invalid:\n"
+            id_info_tmp = id_info_tmp + "\n\nThe following XML IDs are invalid:\n"
             for xml_id in unknown_ids:
-                id_info = id_info + "* " + xml_id + "\n"
-        code, self.commit_message.xml_ids = self.d.inputbox(id_info, height=20, width=78,
+                id_info_tmp = id_info_tmp + "* " + xml_id + "\n"
+        code, self.commit_message.xml_ids = self.d.inputbox(id_info_tmp, height=20, width=78,
                                                             init=self.commit_message.xml_ids)
         if code == 'cancel':
             self.commit_message.docrepo.reset_repo()
@@ -139,13 +141,15 @@ class commitGUI():
 
     def enter_references(self, invalid_references=None):
         global reference_info
+        reference_info_tmp = reference_info
         if invalid_references is not None:
-            reference_info = reference_info + "\n\nThe following references are invalid:\n"
+            reference_info_tmp = reference_info_tmp + "\n\nThe following references are invalid:\n"
             for reference in invalid_references:
-                reference_info = reference_info + "* "+reference+"\n"
-        code, self.commit_message.reference = self.d.inputbox(reference_info, height=20, width=78,
+                reference_info_tmp = reference_info_tmp + "* "+reference+"\n"
+        code, self.commit_message.reference = self.d.inputbox(reference_info_tmp, height=20, width=78,
                                                               init=self.commit_message.reference)
         if code == 'cancel':
+            self.commit_message.docrepo.reset_repo()
             quit()
         self.commit_message.problems = []
         if not self.commit_message.validate_references():
@@ -155,13 +159,15 @@ class commitGUI():
 
     def enter_commits(self, invalid_commits=None):
         global commit_info
+        commit_info_tmp = commit_info
         if invalid_commits is not None:
-            commit_info = commit_info + "\n\nThe following commit hashes are invalid:\n"
+            commit_info_tmp = commit_info_tmp + "\n\nThe following commit hashes are invalid:\n"
             for commit in invalid_commits:
-                commit_info = commit_info + "* "+commit+"\n"
-        code, self.commit_message.merge_commits = self.d.inputbox(commit_info, height=15, width=78,
+                commit_info_tmp = commit_info_tmp + "* "+commit+"\n"
+        code, self.commit_message.merge_commits = self.d.inputbox(commit_info_tmp, height=15, width=78,
                                                                   init=self.commit_message.merge_commits)
         if code == 'cancel':
+            self.commit_message.docrepo.reset_repo()
             quit()
         self.commit_message.problems = []
         if self.commit_message.merge_commits and not self.commit_message.validate_merge_commits():
@@ -175,7 +181,10 @@ class commitGUI():
         """
         text = ""
         if not self.commit_message.format(self.editor):
-            text = "# The following problems have been found:\n"
+            text = """#
+#          !!!  WARNING  !!!
+#
+# The following problems have been found:\n"""
             for item in self.commit_message.problems:
                 text = text + "# * "+item+"\n"
             text = text + '\n'
