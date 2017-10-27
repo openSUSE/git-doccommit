@@ -49,10 +49,10 @@ class commitGUI():
             for file in args.files:
                 if os.path.isfile(file):
                     self.commit_message.docrepo.stage_add_file(file)
-                elif os.path.isdir(file):
-                    for walkfile in os.walk(file):
-                        if os.path.isfile(walkfile):
-                            self.commit_message.docrepo.stage_add_file(walkfile)
+                elif os.path.isdir(file) and not file == '.':
+                    for root, dirs, files in os.walk(file):
+                        for walkfile in files:
+                            self.commit_message.docrepo.stage_add_file(root+walkfile)
 
 
 
