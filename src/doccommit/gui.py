@@ -2,6 +2,7 @@
 Classes and methods used for interactive mode
 """
 import subprocess
+import os
 from dialog import Dialog
 
 
@@ -46,7 +47,13 @@ class commitGUI():
         self.editor = True if args.editor is True else False
         if args.files is not None:
             for file in args.files:
-                self.commit_message.docrepo.stage_add_file(file)
+                if os.path.isfile(file):
+                    self.commit_message.docrepo.stage_add_file(file)
+                elif os.path.isdir(file):
+                    for walkfile in os.walk(file):
+                        if os.path.isfile(walkfile):
+                            self.commit_message.docrepo.stage_add_file(walkfile)
+
 
 
     def select_files(self):
@@ -228,7 +235,6 @@ class commitGUI():
                 text = text + self.commit_message.final_message + "\n\n\n# Return to beginning?"
             code = self.d.yesno(text, height=30, width=78, title=title)
             if code == "ok" and commit:
-                print("Committing (interactive)")
                 self.commit_message.commit()
                 quit()
             elif code == "ok" and not commit:
