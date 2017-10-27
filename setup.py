@@ -42,7 +42,8 @@ setup(
     name='git-doccommit',
     version='1.0.3',
     license='MIT license',
-    description='Helps to write well formatted git commit messages that can be used for SUSE documentation doc u',
+    description='Helps to write well formatted git commit messages that can be used for SUSE' + \
+                'documentation doc u',
     long_description='%s\n%s' % (
         re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
         re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))
@@ -55,7 +56,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     include_package_data=True,
     zip_safe=False,
-    
+
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 5 - Production/Stable',

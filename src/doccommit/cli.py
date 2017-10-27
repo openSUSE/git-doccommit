@@ -30,18 +30,27 @@ def parse_cli_commit(args=None):
     documentation.""")
 
     parser.add_argument('files', metavar='files', type=str, nargs='*', help='files for the commit')
-    parser.add_argument('-i', '--interactive', action='store_true', help='Start in interactive mode')
+    parser.add_argument('-i', '--interactive', action='store_true',
+                        help='Start in interactive mode')
     parser.add_argument('-m', metavar='message', dest='message', type=str, help='Commit message')
     parser.add_argument('-s', metavar='subject', dest='subject', type=str, help='Commit subject')
-    parser.add_argument('-x', metavar='XML IDs', dest='xml_ids', type=str, help='Comma separated list of affected XML IDs')
-    parser.add_argument('-r', metavar='BSC/FATE/etc', dest='reference', type=str, help='Comma separated list of Bugzilla or FATE entries, e.g. FATE#12435 or BSC#12435')
-    parser.add_argument('-c', metavar='Commit hashes', dest='merge_commits', type=str, help='Merge hashes in doc updates into one item')
-    parser.add_argument('-u', metavar='Commit hash', dest='update_commit', type=str, help='Update existing commit message (uses git notes)')
-    parser.add_argument('-a', '--auto-wrap', dest='update_commit', action='store_true', help='Automatic line wrap for message text')
-    parser.add_argument('-e', '--editor', action='store_true', help='Final check is performed in the default editor')
+    parser.add_argument('-x', metavar='XML IDs', dest='xml_ids', type=str,
+                        help='Comma separated list of affected XML IDs')
+    parser.add_argument('-r', metavar='BSC/FATE/etc', dest='reference', type=str,
+                        help='Comma separated list of Bugzilla or FATE entries,' + \
+                             'e.g. FATE#12435 or BSC#12435')
+    parser.add_argument('-c', metavar='Commit hashes', dest='merge_commits', type=str,
+                        help='Merge hashes in doc updates into one item')
+    parser.add_argument('-u', metavar='Commit hash', dest='update_commit', type=str,
+                        help='Update existing commit message (uses git notes)')
+    parser.add_argument('-a', '--auto-wrap', dest='update_commit', action='store_true',
+                        help='Automatic line wrap for message text')
+    parser.add_argument('-e', '--editor', action='store_true',
+                        help='Final check is performed in the default editor')
     parser.set_defaults(command='commit')
 
     return parser.parse_args(args=args)
+
 
 def parse_cli_docupdate(args=None):
     """
@@ -51,11 +60,15 @@ def parse_cli_docupdate(args=None):
     formatted git commits. They can be used to automatically create doc update sections for for SUSE
     documentation.""")
 
-    parser.add_argument('--file', type=str, help='Path to the XML file containing the doc update section')
+    parser.add_argument('--file', type=str,
+                        help='Path to the XML file containing the doc update section')
     return parser.parse_args(args=args)
 
 
 def doccommit(args=None):
+    """
+    Entry point for the doccomment command
+    """
     args = parse_cli_commit(args)
     if not len(sys.argv) > 1:
         print("Nothing to do. Use --help")
@@ -71,7 +84,11 @@ def doccommit(args=None):
         my_gui.final_check()
     commit_message.commit()
 
+
 def docupdate(args=None):
+    """
+    Entry point for the docupdate command
+    """
     args = parse_cli_docupdate(args)
     if not len(sys.argv) > 1:
         print("Nothing to do. Use --help")

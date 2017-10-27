@@ -45,6 +45,13 @@ class commitGUI():
         self.d.set_background_title("Git commit for SUSE documentation")
         self.interactive = True if args.interactive is True else False
         self.editor = True if args.editor is True else False
+        self.argument_files(args)
+
+
+    def argument_files(self, args):
+        """
+        Parse argument files and paths
+        """
         if args.files is not None:
             for file in args.files:
                 if os.path.isfile(file):
@@ -55,10 +62,9 @@ class commitGUI():
                             self.commit_message.docrepo.stage_add_file(root+walkfile)
 
 
-
     def select_files(self):
         """
-        Stage and unstage files
+        Dialog widget with file selection
         """
         all_files = []
         for filename, status in self.commit_message.docrepo.stage():
@@ -68,14 +74,14 @@ class commitGUI():
             self.commit_message.docrepo.reset_repo()
             quit()
         code, filenames = self.d.checklist("Select files",
-                                      choices=[(filename, "", status) for filename,
-                                               status in self.commit_message.docrepo.stage()],
-                                      title="Select the files that should be committed.")
+                                           choices=[(filename, "", status) for filename,
+                                                    status in self.commit_message.docrepo.stage()],
+                                           title="Select the files that should be committed.")
         if code == "cancel":
             self.commit_message.docrepo.reset_repo()
             quit()
         else:
-            self.commit_message.docrepo.stage_remove()
+            self.commit_message.docrepo.reset_repo()
             got_file = False
             for filename in filenames:
                 self.commit_message.docrepo.stage_add_file(filename)
@@ -97,6 +103,9 @@ class commitGUI():
 
 
     def enter_subject(self, error=False):
+        """
+        Dialog widget that asks for the subject
+        """
         if error:
             subject_info_temp = "# Invalid subject!\n" + subject_info
         else:
@@ -114,6 +123,10 @@ class commitGUI():
 
 
     def enter_message(self, problems=None):
+        """
+        Dialog widget that asks for the main message.
+        This message is used for the docupdate section.
+        """
         global message_info
         message_info_tmp = message_info
         if problems is not None:
@@ -127,7 +140,8 @@ class commitGUI():
             self.commit_message.docrepo.reset_repo()
             quit()
         else:
-            self.commit_message.input_message = "\n".join([line for line in txt.splitlines() if not line.startswith("#") ])
+            self.commit_message.input_message = \
+                "\n".join([line for line in txt.splitlines() if not line.startswith("#")])
             self.commit_message.problems = []
             if not self.commit_message.validate_message():
                 self.enter_message(self.commit_message.problems)
@@ -136,6 +150,9 @@ class commitGUI():
 
 
     def enter_xml_ids(self, unknown_ids=None):
+        """
+        Dialog widget that asks for the XML IDs
+        """
         global id_info
         id_info_tmp = id_info
         if unknown_ids is not None:
@@ -154,14 +171,18 @@ class commitGUI():
 
 
     def enter_references(self, invalid_references=None):
+        """
+        Dialog widget that asks for the references (BSC, FATE, etc.)
+        """
         global reference_info
         reference_info_tmp = reference_info
         if invalid_references is not None:
             reference_info_tmp = reference_info_tmp + "\n\nThe following references are invalid:\n"
             for reference in invalid_references:
-                reference_info_tmp = reference_info_tmp + "* "+reference+"\n"
-        code, self.commit_message.reference = self.d.inputbox(reference_info_tmp, height=20, width=78,
-                                                              init=self.commit_message.reference)
+                reference_info_tmp = reference_info_tmp + "* " + reference + "\n"
+        code, self.commit_message.reference = \
+            self.d.inputbox(reference_info_tmp, height=20, width=78,
+                            init=self.commit_message.reference)
         if code == 'cancel':
             self.commit_message.docrepo.reset_repo()
             quit()
@@ -172,14 +193,18 @@ class commitGUI():
 
 
     def enter_commits(self, invalid_commits=None):
+        """
+        Dialog widget that asks for commit hashes for mergers in doc updates
+        """
         global commit_info
         commit_info_tmp = commit_info
         if invalid_commits is not None:
             commit_info_tmp = commit_info_tmp + "\n\nThe following commit hashes are invalid:\n"
             for commit in invalid_commits:
                 commit_info_tmp = commit_info_tmp + "* "+commit+"\n"
-        code, self.commit_message.merge_commits = self.d.inputbox(commit_info_tmp, height=15, width=78,
-                                                                  init=self.commit_message.merge_commits)
+        code, self.commit_message.merge_commits = \
+            self.d.inputbox(commit_info_tmp, height=15, width=78,
+                            init=self.commit_message.merge_commits)
         if code == 'cancel':
             self.commit_message.docrepo.reset_repo()
             quit()
@@ -191,10 +216,11 @@ class commitGUI():
 
     def final_check(self):
         """
-        Format commit message and display
+        Format commit message and display either in dialog or in editor
         """
         text = ""
-        if not self.commit_message.format(self.editor or (not self.interactive and not self.editor)):
+        if not self.commit_message.format(self.editor or
+                                          (not self.interactive and not self.editor)):
             text = """#
 #          !!!  WARNING  !!!
 #
@@ -205,9 +231,10 @@ class commitGUI():
             commit = False
         else:
             commit = True
-        if self.editor or (not self.interactive and not self.editor):
-            with open('/tmp/.doccommit', 'w') as f:
-                f.write(text + self.commit_message.final_message)
+        # If neither interactive mode nor editor is selected, use editor
+        if not self.interactive or self.editor:
+            with open('/tmp/.doccommit', 'w') as tmpfile:
+                tmpfile.write(text + self.commit_message.final_message)
             subprocess.call(['vim', '/tmp/.doccommit'])
             self.commit_message.parse_commit_message(open('/tmp/.doccommit', 'r').read())
             self.commit_message.problems = []
@@ -226,6 +253,7 @@ class commitGUI():
                     quit()
                 else:
                     self.final_check()
+        # if interactive mode is used
         else:
             if commit:
                 title = "Final check"

@@ -60,13 +60,13 @@ class CommitMessage():
                 self.input_message = self.input_message + line.strip()
             elif line.startswith("References: ") and not references_parsed:
                 message_parsed = True
-                self.reference = line.replace("References:","").strip()
+                self.reference = line.replace("References:", "").strip()
                 references_parsed = True
             elif line.startswith("XML IDs: ") and not xml_ids_parsed:
-                self.xml_ids = line.replace("XML IDs:","").strip()
+                self.xml_ids = line.replace("XML IDs:", "").strip()
                 xml_ids_parsed = True
             elif line.startswith("Update Merge: ") and not merge_commits_parsed:
-                self.merge_commits = line.replace("Update Merge:","").strip()
+                self.merge_commits = line.replace("Update Merge:", "").strip()
                 merge_commits_parsed = True
             elif line.startswith("~~ created by git-doccommit version"):
                 doccommit = True
@@ -101,14 +101,17 @@ class CommitMessage():
         regexes = []
         result = []
         # normalize bsc
-        regexes.append((re.compile(r'(?i)(bsc#|boo#|bnc#)(?P<id>[0-9]+)'), 'bsc#\g<id>'))
-        regexes.append((re.compile(r'((http[s]?):\/\/)(bugzilla.)(opensuse.org|(suse|novell).com)/show_bug\.cgi\?id=(?P<id>[0-9]+).*'), 'bsc#\g<id>'))
+        regexes.append((re.compile(r'(?i)(bsc#|boo#|bnc#)(?P<id>[0-9]+)'), r'bsc#\g<id>'))
+        regexes.append((re.compile(r'((http[s]?):\/\/)(bugzilla.)(opensuse.org|(suse|novell).com)"+\
+            "/show_bug\.cgi\?id=(?P<id>[0-9]+).*'), r'bsc#\g<id>'))
         #normalize FATE
-        regexes.append((re.compile(r'(?i)(fate#)(?P<id>[0-9]+)'), 'FATE#\g<id>'))
-        regexes.append((re.compile(r'((http[s]?):\/\/)(fate.suse.com\/)(?P<id>[0-9]+).*'), 'FATE#\g<id>'))
+        regexes.append((re.compile(r'(?i)(fate#)(?P<id>[0-9]+)'), r'FATE#\g<id>'))
+        regexes.append((re.compile(r'((http[s]?):\/\/)(fate.suse.com\/)(?P<id>[0-9]+).*'),
+                        r'FATE#\g<id>'))
         #normalize doccomment
-        regexes.append((re.compile(r'(?i)(doccomments?#|dc#)(?P<id>[0-9]+)'), 'dc#\g<id>'))
-        regexes.append((re.compile(r'((http[s]?):\/\/)(doccomments.provo.novell.com\/33098\/)(?P<id>[0-9]+)/.*'), 'dc#\g<id>'))
+        regexes.append((re.compile(r'(?i)(doccomments?#|dc#)(?P<id>[0-9]+)'), r'dc#\g<id>'))
+        regexes.append((re.compile(r'((http[s]?):\/\/)(doccomments.provo.novell.com\/33098\/)' + \
+                                   r'(?P<id>[0-9]+)/.*'), r'dc#\g<id>'))
         for reference in references:
             for regex, substitute in regexes:
                 reference, n = regex.subn(substitute, reference)
@@ -248,7 +251,10 @@ class CommitMessage():
         Commit a message or write update to git notes if update=COMMITHASH is set.
         """
         if self.format():
-            self.docrepo.commit(self.final_message)
+            if update:
+                self.docrepo.commit(self.final_message)
+            else:
+                pass
         else:
             return False
 
@@ -262,6 +268,9 @@ class CommitMessage():
 
 
 class DocRepo():
+    """
+    Helper class that wraps around the pygit2 repository class
+    """
     def __init__(self, path):
         self.repo = pygit2.Repository(path)
         self.last_commit = ""
@@ -269,6 +278,7 @@ class DocRepo():
 
     def diff(self, cached=True):
         return str(self.repo.diff('HEAD', cached=cached).patch)
+
 
     def stage(self):
         """
@@ -281,7 +291,11 @@ class DocRepo():
             elif code == 128 or code == 256:
                 yield (filename, False)
 
+
     def staged_files(self):
+        """
+        iterator with staged files
+        """
         for filename, code in self.repo.status().items():
             if code == 2:
                 yield (filename, True)
@@ -290,21 +304,25 @@ class DocRepo():
 
 
     def stage_add_file(self, filename):
+        """
+        add a file to the commit
+        """
         self.repo.index.add(filename)
         self.repo.index.write()
 
 
-    def stage_remove(self):
-        self.repo.reset(self.repo.head.get_object().hex, pygit2.GIT_RESET_MIXED)
-        self.repo.index.read()
-
-
     def stage_add_all(self):
+        """
+        Add all filefs to commit
+        """
         self.repo.index.add_all()
         self.repo.index.write()
 
 
     def commit(self, message):
+        """
+        Create a commit
+        """
         oid = self.repo.create_commit(self.repo.head.name,
                                       self.repo.default_signature,
                                       self.repo.default_signature, message,
@@ -315,6 +333,9 @@ class DocRepo():
 
 
     def commit_exists(self, commit_hash):
+        """
+        check if commit exists
+        """
         try:
             if self.repo.get(commit_hash.strip()):
                 return True
@@ -325,6 +346,9 @@ class DocRepo():
 
 
     def reset_repo(self):
+        """
+        reset files added to commit
+        """
         self.repo.reset(self.repo.head.get_object().hex, pygit2.GIT_RESET_MIXED)
         self.repo.index.read()
 

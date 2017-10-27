@@ -15,7 +15,8 @@ def get_source_xml_ids(xml_source_ids):
             if str(file).startswith("MAIN") and str(file).endswith(".xml"):
                 xml = etree.parse(path+str(file))
                 xml.xinclude()
-                for i in xml.xpath("//*[@xml:id]", namespaces={'d': "http://docbook.org/ns/docbook"}):
+                for i in xml.xpath("//*[@xml:id]",
+                                   namespaces={'d': "http://docbook.org/ns/docbook"}):
                     xml_source_ids[i.attrib['{http://www.w3.org/XML/1998/namespace}id']] = \
                     i.findtext('d:title', namespaces={'d': "http://docbook.org/ns/docbook"})
     except FileNotFoundError:
