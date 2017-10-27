@@ -44,6 +44,9 @@ class commitGUI():
         self.d.set_background_title("Git commit for SUSE documentation")
         self.interactive = True if args.interactive is True else False
         self.editor = True if args.editor is True else False
+        if args.files is not None:
+            for file in args.files:
+                self.commit_message.docrepo.stage_add_file(file)
 
 
     def select_files(self):
@@ -86,8 +89,12 @@ class commitGUI():
         self.enter_subject()
 
 
-    def enter_subject(self):
-        code, self.commit_message.subject = self.d.inputbox(subject_info, height=15, width=56,
+    def enter_subject(self, error=False):
+        if error:
+            subject_info_temp = "# Invalid subject!\n" + subject_info
+        else:
+            subject_info_temp = subject_info
+        code, self.commit_message.subject = self.d.inputbox(subject_info_temp, height=15, width=56,
                                                             init=self.commit_message.subject)
         if code == 'cancel':
             self.commit_message.docrepo.reset_repo()
@@ -96,7 +103,7 @@ class commitGUI():
             if self.commit_message.validate_subject():
                 self.enter_message()
             else:
-                self.enter_subject()
+                self.enter_subject(True)
 
 
     def enter_message(self, problems=None):
@@ -180,7 +187,7 @@ class commitGUI():
         Format commit message and display
         """
         text = ""
-        if not self.commit_message.format(self.editor):
+        if not self.commit_message.format(self.editor or (not self.interactive and not self.editor)):
             text = """#
 #          !!!  WARNING  !!!
 #
@@ -191,14 +198,14 @@ class commitGUI():
             commit = False
         else:
             commit = True
-        if self.editor:
+        if self.editor or (not self.interactive and not self.editor):
             with open('/tmp/.doccommit', 'w') as f:
                 f.write(text + self.commit_message.final_message)
             subprocess.call(['vim', '/tmp/.doccommit'])
             self.commit_message.parse_commit_message(open('/tmp/.doccommit', 'r').read())
             self.commit_message.problems = []
             if self.commit_message.validate():
-                asdf = input("Do you want to commit? [Y|n]")
+                asdf = input("Do you want to commit? [Y|n] ")
                 if asdf.lower() != 'y' and asdf != '':
                     quit()
                     self.commit_message.docrepo.reset_repo()
@@ -206,7 +213,7 @@ class commitGUI():
                     self.commit_message.commit()
                     quit()
             else:
-                asdf = input("Your input does not validate. Retry? [Y|n]")
+                asdf = input("Your input does not validate. Retry? [Y|n] ")
                 if asdf.lower() == 'n':
                     self.commit_message.docrepo.reset_repo()
                     quit()
@@ -215,7 +222,7 @@ class commitGUI():
         else:
             if commit:
                 title = "Final check"
-                text = self.commit_message.final_message + "\n\n# ---\n# Continue?"
+                text = self.commit_message.final_message + "\n\n# ---\n# Do you want to commit?"
             else:
                 title = "Linting result"
                 text = text + self.commit_message.final_message + "\n\n\n# Return to beginning?"

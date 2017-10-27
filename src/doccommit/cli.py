@@ -29,6 +29,7 @@ def parse_cli_commit(args=None):
     formatted git commits. They can be used to automatically create doc update sections for for SUSE
     documentation.""")
 
+    parser.add_argument('files', metavar='files', type=str, nargs='*', help='files for the commit')
     parser.add_argument('-i', '--interactive', action='store_true', help='Start in interactive mode')
     parser.add_argument('-m', metavar='message', dest='message', type=str, help='Commit message')
     parser.add_argument('-s', metavar='subject', dest='subject', type=str, help='Commit subject')
