@@ -57,7 +57,7 @@ class CommitMessage():
                 self.subject = line.strip()
                 subject_parsed = True
             elif not line.startswith("References: ") and not message_parsed:
-                self.input_message = self.input_message + line.strip()
+                self.input_message = self.input_message + line.strip() + "\n"
             elif line.startswith("References: ") and not references_parsed:
                 message_parsed = True
                 self.reference = line.replace("References:", "").strip()
