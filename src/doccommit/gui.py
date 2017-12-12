@@ -244,7 +244,7 @@ class commitGUI():
                     quit()
                     self.commit_message.docrepo.reset_repo()
                 else:
-                    self.commit_message.commit()
+                    self.commit_message.commit(True)
                     quit()
             else:
                 asdf = input("Your input does not validate. Retry? [Y|n] ")
@@ -263,7 +263,7 @@ class commitGUI():
                 text = text + self.commit_message.final_message + "\n\n\n# Return to beginning?"
             code = self.d.yesno(text, height=30, width=78, title=title)
             if code == "ok" and commit:
-                self.commit_message.commit()
+                self.commit_message.commit(True)
                 quit()
             elif code == "ok" and not commit:
                 self.enter_subject()
