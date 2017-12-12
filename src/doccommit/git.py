@@ -241,7 +241,7 @@ class CommitMessage():
         if comments or (self.merge_commits is not None and self.merge_commits != ""):
             result = result + "DocUpdate Merge: " + self.merge_commits
 
-        result = result + "\n~~ created by git-doccommit version 1.0.4"
+        result = result + "\n~~ created by git-doccommit version 1.0.5"
         self.final_message = result
         return no_problem
 

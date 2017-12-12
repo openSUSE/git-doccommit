@@ -40,7 +40,7 @@ def requires(filename):
 
 setup(
     name='git-doccommit',
-    version='1.0.4',
+    version='1.0.5',
     license='MIT license',
     description='Helps to write well formatted git commit messages that can be used for SUSE' + \
                 'documentation doc u',
