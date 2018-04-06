@@ -4,6 +4,7 @@ Classes and methods used for interactive mode
 import subprocess
 import os
 from dialog import Dialog
+import npyscreen
 
 
 subject_info = """# Insert subject. Use
@@ -270,3 +271,77 @@ class commitGUI():
             else:
                 self.commit_message.docrepo.reset_repo()
                 quit()
+
+class commitGUInpyscreen(npyscreen.NPSAppManaged):
+    def __init__(self, commit_message, args): 
+        self._FORM_VISIT_LIST = []
+        self.NEXT_ACTIVE_FORM = self.__class__.STARTING_FORM
+        self._LAST_NEXT_ACTIVE_FORM = None
+        self._Forms = {}
+        self.commit_message = commit_message
+        self.args = args
+        self.interactive = True if args.interactive is True else False
+        self.editor = True if args.editor is True else False
+        self.selected_files = []
+
+    def onStart(self):
+        #self.addForm("MAIN", TestForm)
+        self.addForm("MAIN", SelectFiles)
+        self.addForm("WRITE", WriteCommit)
+        
+
+class SelectFiles(npyscreen.Form):
+    def create(self):
+        self.createLists()
+        files = self.add(npyscreen.TitleMultiSelect,
+                    max_height =-2,
+                    name="Select files for commit:",
+                    value = self.selected_files,
+                    values = self.all_files,
+                    scroll_exit=True)
+        self.edit()
+        if(isinstance(files.get_selected_objects(), list)):
+            self.parentApp.selected_files = files.get_selected_objects()
+            #npyscreen.notify_wait(' '.join(self.parentApp.selected_files), title='Popup Title')
+    
+    def beforeEditing(self):
+        self.name = "git doccommit"
+        self.parentApp.setNextForm("WRITE")
+
+    def createLists(self):
+        self.all_files = []
+        n = 0
+        self.selected_files = []
+        for filename, status in self.parentApp.commit_message.docrepo.stage():
+            self.all_files.append(filename)
+            if(status):
+                self.selected_files.append(n)
+            n = n + 1
+        if not self.all_files:
+            print("No changed files in repository. Exiting ...")
+            self.parentApp.commit_message.docrepo.reset_repo()
+            quit()
+
+class WriteCommit(npyscreen.Form):
+    def create(self):
+        usrn_box = self.add_widget(npyscreen.TitleText, name="Subject:")
+        internet = self.add_widget(npyscreen.TitleText, name="XML ID:")
+        reference = self.add_widget(npyscreen.TitleText, name="Reference:")
+        commits = self.add_widget(npyscreen.TitleText, name="Commits:")
+        self.add_widget(npyscreen.TitleFixedText, name="Message")
+        message = self.add_widget(npyscreen.MultiLineEdit, name="Message", value="# Enter message here\n")
+        self.edit()       
+        quit() 
+
+    def beforeEditing(self):
+        self.name = "git doccommit"
+        self.parentApp.setNextForm(None)
+
+class TestForm(npyscreen.Form):
+    def create(self):
+        npyscreen.notify_wait('TestForm', title='Popup Title')
+
+    def afterEditing(self):
+        #self.parentApp.setNextForm('SELECTFILES')
+        self.parentApp.setNextForm(None)
+        #quit()

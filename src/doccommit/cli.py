@@ -47,6 +47,8 @@ def parse_cli_commit(args=None):
                         help='Automatic line wrap for message text')
     parser.add_argument('-e', '--editor', action='store_true',
                         help='Final check is performed in the default editor')
+    parser.add_argument('-o', '--old-mode', action='store_true',
+                        help='Use old Python Dialog mode')
     parser.set_defaults(command='commit')
 
     return parser.parse_args(args=args)
@@ -77,11 +79,16 @@ def doccommit(args=None):
     path = git.find_root(os.getcwd())
     docrepo = git.DocRepo(path)
     commit_message = git.CommitMessage(docrepo, args)
-    my_gui = gui.commitGUI(commit_message, args)
-    if args.interactive:
-        my_gui.select_files()
+    if(args.old_mode):
+        my_gui = gui.commitGUI(commit_message, args)
+        if args.interactive:
+            my_gui.select_files()
+        else:
+            my_gui.final_check()
     else:
-        my_gui.final_check()
+        my_gui = gui.commitGUInpyscreen(commit_message, args)
+        #my_gui = gui.commitGUInpyscreen()
+        my_gui.run()
     commit_message.commit()
 
 
