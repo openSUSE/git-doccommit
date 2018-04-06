@@ -286,11 +286,10 @@ class DocRepo():
         """
         self.repo.index.read()
         for filename, code in self.repo.status().items():
-            if code == 2:
+            if code == 2 or code == 1:
                 yield (filename, True)
             elif code == 128 or code == 256:
                 yield (filename, False)
-
 
     def staged_files(self):
         """
@@ -301,7 +300,6 @@ class DocRepo():
                 yield (filename, True)
             else:
                 pass
-
 
     def stage_add_file(self, filename):
         """
