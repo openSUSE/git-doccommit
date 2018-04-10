@@ -303,7 +303,7 @@ class SelectFiles(npyscreen.Form):
         if(isinstance(files.get_selected_objects(), list)):
             self.parentApp.selected_files = files.get_selected_objects()
             #npyscreen.notify_wait(' '.join(self.parentApp.selected_files), title='Popup Title')
-    
+
     def beforeEditing(self):
         self.name = "git doccommit"
         self.parentApp.setNextForm("WRITE")
@@ -324,11 +324,12 @@ class SelectFiles(npyscreen.Form):
 
 class WriteCommit(npyscreen.Form):
     def create(self):
-        usrn_box = self.add_widget(npyscreen.TitleText, name="Subject:")
+        self.add_widget(npyscreen.Pager, value="Blabbergast", max_height=5)
+        usrn_box = self.add_widget(npyscreen.TitleText, name="Subject:", color="STANDOUT")
         internet = self.add_widget(npyscreen.TitleText, name="XML ID:")
         reference = self.add_widget(npyscreen.TitleText, name="Reference:")
         commits = self.add_widget(npyscreen.TitleText, name="Commits:")
-        self.add_widget(npyscreen.TitleFixedText, name="Message")
+        self.add_widget(npyscreen.TitleFixedText, name="Message", editable=False)
         message = self.add_widget(npyscreen.MultiLineEdit, name="Message", value="# Enter message here\n")
         self.edit()       
         quit() 
